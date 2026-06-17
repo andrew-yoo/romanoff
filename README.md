@@ -22,14 +22,20 @@ We improve Griego's prime set by adding the primes $503$, $2687$, and $6361$. Th
 $$\{3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 61, 73, 89, 167, 223, 233, 263, 359, 383, 431, 439, 479, 503, 1103, 1433, 1913, 2089, 2351, 2687, 4513, 5737, 6361, 8191, 9719, 176383, 178481\}$$
 
 
-## Files
+## Verification
 
-- `generate_seed_histogram.cpp` — computes the 13-prime seed histogram
-- `verify.py` — applies cluster updates and computes the final bound
-- `verify.sh` — runs the full verification
-- `tests/` — self-tests
+### Requirements
 
-Run `./verify.sh`. Uses exact integer/rational arithmetic throughout.
+- C++ compiler (g++ 13.3.0)
+- Python (Python 3.12.3)
+
+### Instructions
+
+```sh
+./verify.sh
+```
+
+Computes the upper bound using exact (rational) arithmetic.
 
 ## Notes
 
