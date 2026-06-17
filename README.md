@@ -1,4 +1,4 @@
-# Romanoff's Constant
+# An Improved Upper Bound on Romanoff's Constant
 
 ## Summary
 
