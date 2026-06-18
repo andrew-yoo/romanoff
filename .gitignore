@@ -1,5 +1,7 @@
 tests/
 drafts/
+paper/
+
 generate_seed_histogram
 seed_histogram_13_prime.txt
 certificate_summary.json
