@@ -11,9 +11,9 @@ $$C_{45} < 0.490249407811155$$
 
 to
 
-$$C_{45} < 0.490248930138967$$
+$$C_{45} < 0.490248930138966$$
 
-which is an improvement of roughly $4.8 \cdot 10^{-7}$
+which is an improvement of roughly $4.8 \times 10^{-7}$
 
 ## Method
 

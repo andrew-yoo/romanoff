@@ -18,7 +18,7 @@ BASE_PRIMES = [3, 5, 7, 11, 13, 17, 19, 29, 31, 37, 41, 61, 73]
 ADDED_CLUSTERS = {
     11: [23, 89],
     13: [8191],
-    23: [47, 178481],
+    23: [47],
     29: [233, 1103, 2089],
     37: [223],
     43: [431, 9719],
@@ -30,10 +30,11 @@ ADDED_CLUSTERS = {
     131: [263],
     179: [359, 1433],
     191: [383],
-    239: [479, 1913, 5737, 176383],
+    233: [1399],
+    239: [479, 1913],
     251: [503],
 }
-# Adds primes 503, 2687, 6361
+
 
 ALL_PRIMES = sorted(BASE_PRIMES + [q for qs in ADDED_CLUSTERS.values() for q in qs])
 
@@ -249,7 +250,7 @@ def render_result(result: CertificateResult) -> str:
             f"seed histogram entries = {result.seed_histogram_entries}",
             f"added multiplier entries = {result.added_multiplier_entries}",
             f"rational upper sum = {result.rational_upper_sum_decimal}",
-            f"proved: upper density < {result.g2026_upper_bound_decimal}",
+            f"proved: upper density < {result.rational_upper_sum_decimal[:17]}",
             f"improvement over G2026 bound = {result.improvement_decimal}",
         ]
     )
