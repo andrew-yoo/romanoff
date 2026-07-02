@@ -13,7 +13,7 @@ from math import lcm, prod
 from pathlib import Path
 import sys
 
-BASE_PRIMES = [3, 5, 7, 11, 13, 17, 19, 29, 31, 37, 41, 61, 73]
+BASE_PRIMES = [3, 5, 7, 11, 13, 17, 19, 29, 31, 37, 41, 61, 73, 257]
 
 ADDED_CLUSTERS = {
     11: [23, 89],
@@ -27,11 +27,12 @@ ADDED_CLUSTERS = {
     73: [439],
     79: [2687],
     83: [167],
+    113: [3391],
     131: [263],
     179: [359, 1433],
     191: [383],
     233: [1399],
-    239: [479, 1913],
+    239: [479],
     251: [503],
 }
 
@@ -73,7 +74,7 @@ def load_seed_histogram(path: Path) -> dict[int, int]:
             raise ValueError(f"{path}:{lineno}: expected two columns, got {raw!r}")
         nu = int(parts[0])
         count = int(parts[1])
-        if not (0 <= nu <= 2520):
+        if not (0 <= nu <= 5040):
             raise ValueError(f"{path}:{lineno}: nu out of range: {nu}")
         if count <= 0:
             raise ValueError(f"{path}:{lineno}: nonpositive count: {count}")
@@ -111,14 +112,18 @@ def cluster_polynomial(order: int, primes: list[int]) -> dict[int, int]:
                 new[s + 1] += count * (d - s)
         dist = dict(new)
     poly = {d - s: count for s, count in dist.items()}
-    require(sum(poly.values()) == prod(primes), "cluster polynomial total weight mismatch")
+    require(
+        sum(poly.values()) == prod(primes), "cluster polynomial total weight mismatch"
+    )
     return poly
 
 
 def brute_force_cluster_polynomial(order: int, primes: list[int]) -> dict[int, int]:
     power_residues = []
     for q in primes:
-        require(ord_mod_2(q) == order, f"order mismatch in brute force cluster for q={q}")
+        require(
+            ord_mod_2(q) == order, f"order mismatch in brute force cluster for q={q}"
+        )
         residues = []
         x = 1 % q
         for _ in range(order):
@@ -129,7 +134,9 @@ def brute_force_cluster_polynomial(order: int, primes: list[int]) -> dict[int, i
     for residue_tuple in product(*(range(q) for q in primes)):
         h = 0
         for r in range(order):
-            if all(residue_tuple[i] != power_residues[i][r] for i in range(len(primes))):
+            if all(
+                residue_tuple[i] != power_residues[i][r] for i in range(len(primes))
+            ):
                 h += 1
         counts[h] += 1
     return dict(counts)
@@ -148,12 +155,17 @@ def multiplier_distribution() -> Counter[int]:
 
 
 def log2_lower_bound(terms: int = 40) -> Fraction:
-    return sum(Fraction(2, (2*j + 1) * 3**(2*j + 1)) for j in range(terms))
+    return sum(Fraction(2, (2 * j + 1) * 3 ** (2 * j + 1)) for j in range(terms))
 
 
 def decimal(frac: Fraction, prec: int = 100) -> Decimal:
     getcontext().prec = prec
     return Decimal(frac.numerator) / Decimal(frac.denominator)
+
+
+def round_up(f: Fraction, places: int) -> Fraction:
+    scale = 10**places
+    return Fraction((f.numerator * scale + f.denominator - 1) // f.denominator, scale)
 
 
 def run_self_tests() -> None:
@@ -164,21 +176,28 @@ def run_self_tests() -> None:
     ):
         expected = brute_force_cluster_polynomial(order, primes)
         actual = cluster_polynomial(order, primes)
-        require(actual == expected, f"cluster polynomial self-test failed for order {order}")
+        require(
+            actual == expected, f"cluster polynomial self-test failed for order {order}"
+        )
 
     lb10 = log2_lower_bound(10)
     lb20 = log2_lower_bound(20)
     lb40 = log2_lower_bound(40)
     require(lb10 < lb20 < lb40, "log2 lower bound should increase with more terms")
-    require(Fraction(69, 100) < lb40 < Fraction(70, 100), "log2 lower bound sanity check failed")
+    require(
+        Fraction(69, 100) < lb40 < Fraction(70, 100),
+        "log2 lower bound sanity check failed",
+    )
 
 
 def verify_certificate(seed_path: Path) -> CertificateResult:
     seed_digest = hashlib.sha256(seed_path.read_bytes()).hexdigest()
-    base_histogram_13_prime = load_seed_histogram(seed_path)
-    require(set(base_histogram_13_prime) <= set(range(2521)), "seed histogram contains nu > 2520")
+    base_histogram = load_seed_histogram(seed_path)
     require(
-        sum(base_histogram_13_prime.values()) == prod(BASE_PRIMES),
+        set(base_histogram) <= set(range(5041)), "seed histogram contains nu > 5040"
+    )
+    require(
+        sum(base_histogram.values()) == prod(BASE_PRIMES),
         "seed histogram total does not match base prime product",
     )
 
@@ -190,7 +209,10 @@ def verify_certificate(seed_path: Path) -> CertificateResult:
 
     mult = multiplier_distribution()
     added_prime_product = prod(q for qs in ADDED_CLUSTERS.values() for q in qs)
-    require(sum(mult.values()) == added_prime_product, "multiplier distribution total mismatch")
+    require(
+        sum(mult.values()) == added_prime_product,
+        "multiplier distribution total mismatch",
+    )
     require(prod(BASE_PRIMES) * added_prime_product == M, "prime product mismatch")
 
     items = sorted(mult.items())
@@ -207,7 +229,7 @@ def verify_certificate(seed_path: Path) -> CertificateResult:
     prime_progression_scale = Fraction(1, T * phi_M) / log2_lb
 
     S_upper = Fraction(0, 1)
-    for nu, delta in base_histogram_13_prime.items():
+    for nu, delta in base_histogram.items():
         if nu == 0:
             continue
         threshold = trivial_term / (prime_progression_scale * nu)
@@ -220,7 +242,7 @@ def verify_certificate(seed_path: Path) -> CertificateResult:
             + trivial_term * large_weight
         )
 
-    require(S_upper < G2026_UPPER, "39-prime bound does not improve on G2026 (36-prime) bound!")
+    require(S_upper < G2026_UPPER, "38-prime bound does not improve on G2026 bound!")
 
     return CertificateResult(
         number_of_primes=len(ALL_PRIMES),
@@ -228,7 +250,7 @@ def verify_certificate(seed_path: Path) -> CertificateResult:
         phi_M=phi_M,
         T=T,
         seed_histogram_sha256=seed_digest,
-        seed_histogram_entries=len(base_histogram_13_prime),
+        seed_histogram_entries=len(base_histogram),
         added_multiplier_entries=len(mult),
         rational_upper_sum_numerator=S_upper.numerator,
         rational_upper_sum_denominator=S_upper.denominator,
@@ -241,7 +263,7 @@ def verify_certificate(seed_path: Path) -> CertificateResult:
 def render_result(result: CertificateResult) -> str:
     return "\n".join(
         [
-            "39-prime Romanoff upper-density certificate",
+            "38-prime Romanoff upper-density certificate",
             f"number of primes = {result.number_of_primes}",
             f"M = {result.M}",
             f"phi(M) = {result.phi_M}",
@@ -250,7 +272,7 @@ def render_result(result: CertificateResult) -> str:
             f"seed histogram entries = {result.seed_histogram_entries}",
             f"added multiplier entries = {result.added_multiplier_entries}",
             f"rational upper sum = {result.rational_upper_sum_decimal}",
-            f"proved: upper density < {result.rational_upper_sum_decimal[:17]}",
+            f"proved: upper density < {decimal(round_up(Fraction(result.rational_upper_sum_numerator, result.rational_upper_sum_denominator), 15), 16)}",
             f"improvement over G2026 bound = {result.improvement_decimal}",
         ]
     )
@@ -264,17 +286,21 @@ def write_json_summary(result: CertificateResult, path: Path) -> None:
         "decimal": result.rational_upper_sum_decimal,
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Verify the C45 Romanoff upper-density certificate with 39 primes.")
+    parser = argparse.ArgumentParser(
+        description="Verify the C45 Romanoff upper-density certificate with 38 primes."
+    )
     parser.add_argument(
         "seed_histogram",
         nargs="?",
-        default="seed_histogram_13_prime.txt",
+        default="seed_histogram_14_prime.txt",
         type=Path,
-        help="Path to the generated 13-prime seed histogram.",
+        help="Path to the generated seed histogram.",
     )
     parser.add_argument(
         "--json-out",

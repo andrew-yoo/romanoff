@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-// Computes the 13-prime seed histogram for the C45 Romanoff certificate from
+// Computes the 14-prime seed histogram for the C45 Romanoff certificate from
 // first principles. The computation does not hard-code the histogram.
 //
 // For a base modulus M0 = product(q), q in BASE_PRIMES, and T0 = lcm ord_q(2),
@@ -114,7 +114,7 @@ static std::vector<std::pair<int, int>> base_order() {
     // Processing order chosen to keep the exact state space small. The second
     // component is checked against ord_q(2), not trusted.
     return {
-        {17, 8}, {29, 28}, {61, 60}, {37, 36}, {19, 18}, {73, 9},
+        {257, 16}, {17, 8}, {29, 28}, {61, 60}, {37, 36}, {19, 18}, {73, 9},
         {3, 2}, {7, 3}, {5, 4}, {31, 5}, {11, 10}, {13, 12}, {41, 20},
     };
 }
@@ -190,7 +190,7 @@ static HistogramResult compute_histogram(
     states[canonical_rotation(std::move(initial))] = 1;
 
     if (trace) {
-        std::cerr << "13-prime seed histogram generator\n";
+        std::cerr << "14-prime seed histogram generator\n";
         std::cerr << "M0 = " << modulus << "\n";
         std::cerr << "T0 = " << period << "\n";
     }
